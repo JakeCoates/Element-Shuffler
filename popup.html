@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Element Shuffler</title>
+	<style>
+		body {
+			width: 200px;
+			font-family: Arial, sans-serif;
+			text-align: center;
+			background-color: #fab7cc;
+		}
+
+		.flexy {
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.flexx {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+		}
+
+
+		button {
+			width: 100%;
+			padding: 10px;
+			margin: 5px 0;
+			font-size: 14px;
+		}
+
+		img.logo {
+			width: 50px;
+			height: 50px;
+			border-radius: 8px;
+			border: 1px solid rgba(255, 255, 255, 0.5);
+		}
+	</style>
+</head>
+
+<body>
+	<div class="flexy">
+		<img src="icons/icon128.png" class="logo" alt="Shuffler Logo">
+		<div class="flexx">
+			<button id="selectElement">Select Element</button>
+			<button id="clearElements">Clear All Elements</button>
+		</div>
+	</div>
+	<script src="popup.js"></script>
+</body>
+
+</html>
