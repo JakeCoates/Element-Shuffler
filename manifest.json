@@ -5,12 +5,7 @@
 	"description": "Highlight a parent element and randomize the order of its children.",
 	"permissions": [
 		"activeTab",
-		"scripting",
-		"privacy",
 		"storage"
-	],
-	"host_permissions": [
-		"<all_urls>"
 	],
 	"background": {
 		"service_worker": "background.js"

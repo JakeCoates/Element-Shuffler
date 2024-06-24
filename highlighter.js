@@ -1,5 +1,3 @@
-// highlighter.js
-
 const highlightColor = "rgb(213, 234, 255)";
 
 const template = `

@@ -1,9 +1,10 @@
 let selectingElement = false;
 let previousHighlight = null;
 
-
 window.addEventListener("load", () => {
-  loadShuffleButtons();
+    setTimeout(() => {
+        loadShuffleButtons();
+    }, 1000);
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -15,7 +16,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// Highlight element on hover
 document.addEventListener("mouseover", (e) => {
     if (selectingElement) {
         const element = e.target;
@@ -27,11 +27,10 @@ document.addEventListener("mouseover", (e) => {
     }
 });
 
-// Add permanent button on click
 document.addEventListener("click", (e) => {
     if (selectingElement) {
         const element = e.target;
-        addPermanentShuffleButton(element);
+        addPermanentButtons(element);
         selectingElement = false;
         document.body.style.cursor = "default";
         if (previousHighlight) {
@@ -40,47 +39,135 @@ document.addEventListener("click", (e) => {
     }
 });
 
-function addPermanentShuffleButton(element) {
+function addPermanentButtons(element, existingPosition) {
+    const buttonContainer = createButtonContainer(element, existingPosition);
+    document.body.appendChild(buttonContainer);
+
+    // Save the button position and associated element information to storage
+    if (!existingPosition) {
+        saveButtonPosition(element, buttonContainer);
+    }
+}
+
+function createButtonContainer(element, existingPosition) {
     const buttonContainer = document.createElement("div");
     buttonContainer.className = "button-container";
     buttonContainer.innerHTML = `
+        <button class="up-button">⬆️</button>
+        <button class="down-button">⬇️</button>
+        <button class="left-button">⬅️</button>
+        <button class="right-button">➡️</button>
         <button class="shuffle-button">Shuffle</button>
         <button class="remove-button">✖</button>
     `;
 
     const rect = element.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const topPosition = rect.top + window.scrollY - 34;
+    const bottomPosition = rect.bottom + window.scrollY + 5;
+
+    if (existingPosition) {
+        buttonContainer.style.top = existingPosition.top;
+        buttonContainer.style.left = existingPosition.left;
+    } else {
+        buttonContainer.style.top = topPosition < 0 ? `${bottomPosition}px` : `${topPosition}px`;
+        buttonContainer.style.left = `${rect.left + window.scrollX}px`;
+    }
+
     buttonContainer.style.position = "absolute";
-    buttonContainer.style.left = `${rect.left + window.scrollX}px`;
-    buttonContainer.style.top = `${rect.top + window.scrollY - 34}px`;
     buttonContainer.style.zIndex = 9999;
     buttonContainer.style.display = "flex";
+    buttonContainer.style.alignItems = "center";
     buttonContainer.style.gap = "5px";
 
-    const shuffleBtn = buttonContainer.querySelector(".shuffle-button");
-    shuffleBtn.style.backgroundColor = "rgba(0, 0, 0, .55)";
-    shuffleBtn.style.color = "white";
-    shuffleBtn.style.border = "1px solid rgba(255, 255, 255, .15)";
-    shuffleBtn.style.borderRadius = "5px";
-    shuffleBtn.style.padding = "5px 10px";
-    shuffleBtn.style.cursor = "pointer";
+    styleButton(buttonContainer.querySelector(".shuffle-button"), "rgba(0, 0, 0, .55)", "white");
+    styleButton(buttonContainer.querySelector(".remove-button"), "rgba(0, 0, 0, .55)", "white");
+    styleButton(buttonContainer.querySelector(".up-button"), "rgba(0, 0, 0, .55)", "white");
+    styleButton(buttonContainer.querySelector(".down-button"), "rgba(0, 0, 0, .55)", "white");
+    styleButton(buttonContainer.querySelector(".left-button"), "rgba(0, 0, 0, .55)", "white");
+    styleButton(buttonContainer.querySelector(".right-button"), "rgba(0, 0, 0, .55)", "white");
 
-    const removeBtn = buttonContainer.querySelector(".remove-button");
-    removeBtn.style.backgroundColor = "rgba(0, 0, 0, .55)";
-    removeBtn.style.color = "white";
-    removeBtn.style.border = "1px solid rgba(255, 255, 255, .15)";
-    removeBtn.style.borderRadius = "5px";
-    removeBtn.style.padding = "4px";
-    removeBtn.style.cursor = "pointer";
+    addEventListeners(buttonContainer, element);
 
-    shuffleBtn.addEventListener("click", () => shuffleChildren(element));
-    removeBtn.addEventListener("click", () => removeShuffleButton(element, buttonContainer));
-
-    document.body.appendChild(buttonContainer);
-
-    // Save the button position and associated element information to storage
-    saveButtonPosition(element, buttonContainer);
+    return buttonContainer;
 }
 
+function styleButton(button, bgColor, color) {
+    button.style.backgroundColor = bgColor;
+    button.style.color = color;
+    button.style.border = "1px solid rgba(255, 255, 255, .15)";
+    button.style.borderRadius = "5px";
+    button.style.padding = "4px";
+    button.style.display = "flex";
+    button.style.alignItems = "center";
+    button.style.cursor = "pointer";
+    button.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
+}
+
+function addEventListeners(buttonContainer, element) {
+    const shuffleBtn = buttonContainer.querySelector(".shuffle-button");
+    const upBtn = buttonContainer.querySelector(".up-button");
+    const downBtn = buttonContainer.querySelector(".down-button");
+    const leftBtn = buttonContainer.querySelector(".left-button");
+    const rightBtn = buttonContainer.querySelector(".right-button");
+    const removeBtn = buttonContainer.querySelector(".remove-button");
+
+    shuffleBtn.addEventListener("click", () => shuffleChildren(element));
+    upBtn.addEventListener("click", () => selectParentElement(element, buttonContainer));
+    downBtn.addEventListener("click", () => selectChildElement(element, buttonContainer));
+    leftBtn.addEventListener("click", () => selectPreviousSibling(element, buttonContainer));
+    rightBtn.addEventListener("click", () => selectNextSibling(element, buttonContainer));
+    removeBtn.addEventListener("click", () => removeShuffleButton(element, buttonContainer));
+
+    shuffleBtn.addEventListener("mouseover", () => highlightElement(element));
+    upBtn.addEventListener("mouseover", () => highlightElement(element.parentElement));
+    downBtn.addEventListener("mouseover", () => highlightElement(element.firstElementChild));
+    leftBtn.addEventListener("mouseover", () => highlightElement(element.previousElementSibling));
+    rightBtn.addEventListener("mouseover", () => highlightElement(element.nextElementSibling));
+    shuffleBtn.addEventListener("mouseout", () => removeHighlight());
+    upBtn.addEventListener("mouseout", () => removeHighlight());
+    downBtn.addEventListener("mouseout", () => removeHighlight());
+    leftBtn.addEventListener("mouseout", () => removeHighlight());
+    rightBtn.addEventListener("mouseout", () => removeHighlight());
+}
+
+function selectParentElement(element, buttonContainer) {
+    if (element.parentElement) {
+        updateButtonPosition(element.parentElement, buttonContainer);
+    }
+}
+
+function selectChildElement(element, buttonContainer) {
+    if (element.firstElementChild) {
+        updateButtonPosition(element.firstElementChild, buttonContainer);
+    }
+}
+
+function selectPreviousSibling(element, buttonContainer) {
+    if (element.previousElementSibling) {
+        updateButtonPosition(element.previousElementSibling, buttonContainer);
+    }
+}
+
+function selectNextSibling(element, buttonContainer) {
+    if (element.nextElementSibling) {
+        updateButtonPosition(element.nextElementSibling, buttonContainer);
+    }
+}
+
+function loadShuffleButtons() {
+    chrome.storage.local.get({ shuffleButtons: [] }, (result) => {
+        const shuffleButtons = result.shuffleButtons;
+        shuffleButtons.forEach(buttonData => {
+            const element = getElementFromPath(buttonData.elementPath);
+            if (element) {
+                const existingPosition = { top: buttonData.top, left: buttonData.left };
+                const buttonContainer = createButtonContainer(element, existingPosition);
+                document.body.appendChild(buttonContainer);
+            }
+        });
+    });
+}
 function shuffleChildren(element) {
     if (element && element.children.length > 0) {
         const childrenArray = Array.from(element.children);
@@ -89,6 +176,17 @@ function shuffleChildren(element) {
             element.appendChild(childrenArray[j]);
         }
     }
+}
+
+function highlightElement(element) {
+    if (element) {
+        element.classList.add("highlighted");
+    }
+}
+
+function removeHighlight() {
+    const highlightedElements = document.querySelectorAll(".highlighted");
+    highlightedElements.forEach(el => el.classList.remove("highlighted"));
 }
 
 function saveButtonPosition(element, button) {
@@ -102,50 +200,6 @@ function saveButtonPosition(element, button) {
         const shuffleButtons = result.shuffleButtons;
         shuffleButtons.push(buttonData);
         chrome.storage.local.set({ shuffleButtons });
-    });
-}
-
-function loadShuffleButtons() {
-    chrome.storage.local.get({ shuffleButtons: [] }, (result) => {
-        const shuffleButtons = result.shuffleButtons;
-        shuffleButtons.forEach(buttonData => {
-            const element = getElementFromPath(buttonData.elementPath);
-            if (element) {
-                const buttonContainer = document.createElement("div");
-                buttonContainer.className = "button-container";
-                buttonContainer.innerHTML = `
-                    <button class="shuffle-button">Shuffle</button>
-                    <button class="remove-button">✖</button>
-                `;
-                buttonContainer.style.position = "absolute";
-                buttonContainer.style.left = buttonData.left;
-                buttonContainer.style.top = buttonData.top;
-                buttonContainer.style.zIndex = 9999;
-                buttonContainer.style.display = "flex";
-                buttonContainer.style.gap = "5px";
-
-                const shuffleBtn = buttonContainer.querySelector(".shuffle-button");
-                shuffleBtn.style.backgroundColor = "rgba(0, 0, 0, .55)";
-                shuffleBtn.style.color = "white";
-                shuffleBtn.style.border = "1px solid rgba(255, 255, 255, .15)";
-                shuffleBtn.style.borderRadius = "5px";
-                shuffleBtn.style.padding = "5px 10px";
-                shuffleBtn.style.cursor = "pointer";
-
-                const removeBtn = buttonContainer.querySelector(".remove-button");
-                removeBtn.style.backgroundColor = "rgba(0, 0, 0, .55)";
-                removeBtn.style.color = "white";
-                removeBtn.style.border = "1px solid rgba(255, 255, 255, .15)";
-                removeBtn.style.borderRadius = "5px";
-                removeBtn.style.padding = "4px";
-                removeBtn.style.cursor = "pointer";
-
-                shuffleBtn.addEventListener("click", () => shuffleChildren(element));
-                removeBtn.addEventListener("click", () => removeShuffleButton(element, buttonContainer));
-
-                document.body.appendChild(buttonContainer);
-            }
-        });
     });
 }
 
@@ -176,6 +230,11 @@ function getElementFromPath(path) {
     return document.querySelector(path);
 }
 
+function updateButtonPosition(newElement, buttonContainer) {
+    buttonContainer.remove();
+    addPermanentButtons(newElement, { top: buttonContainer.style.top, left: buttonContainer.style.left });
+}
+
 function removeShuffleButton(element, button) {
     button.remove();
     chrome.storage.local.get({ shuffleButtons: [] }, (result) => {
@@ -193,7 +252,6 @@ function clearAllShuffleButtons() {
     chrome.storage.local.set({ shuffleButtons: [] });
 }
 
-// Add CSS for highlighted elements
 const style = document.createElement("style");
 style.textContent = `
   .highlighted {
