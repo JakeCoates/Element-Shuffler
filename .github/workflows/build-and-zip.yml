@@ -24,16 +24,25 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Prepare directories
+      run: |
+        mkdir chrome
+        mkdir firefox
+
     - name: Copy Chrome manifest and zip
       run: |
-        cp manifest-chrome.json manifest.json
-        zip -r element-shuffler-chrome.zip . -x .git/\* node_modules/\* .github/\* \*.sh \*.zip
+        cp manifest-chrome.json chrome/manifest.json
+        cp -r * chrome/
+        cd chrome
+        zip -r ../element-shuffler-chrome.zip . -x "node_modules/*" ".github/*" "*.sh" "*.zip"
       shell: bash
 
     - name: Copy Firefox manifest and zip
       run: |
-        cp manifest-firefox.json manifest.json
-        zip -r element-shuffler-firefox.zip . -x .git/\* node_modules/\* .github/\* \*.sh \*.zip
+        cp manifest-firefox.json firefox/manifest.json
+        cp -r * firefox/
+        cd firefox
+        zip -r ../element-shuffler-firefox.zip . -x "node_modules/*" ".github/*" "*.sh" "*.zip"
       shell: bash
 
     - name: Upload Chrome artifact
