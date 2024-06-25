@@ -1,0 +1,49 @@
+name: Build and Zip Extension
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Copy Chrome manifest and zip
+      run: |
+        cp manifest-chrome.json manifest.json
+        zip -r element-shuffler-chrome.zip . -x .git/\* node_modules/\* .github/\* \*.sh \*.zip
+      shell: bash
+
+    - name: Copy Firefox manifest and zip
+      run: |
+        cp manifest-firefox.json manifest.json
+        zip -r element-shuffler-firefox.zip . -x .git/\* node_modules/\* .github/\* \*.sh \*.zip
+      shell: bash
+
+    - name: Upload Chrome artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: element-shuffler-chrome
+        path: element-shuffler-chrome.zip
+
+    - name: Upload Firefox artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: element-shuffler-firefox
+        path: element-shuffler-firefox.zip

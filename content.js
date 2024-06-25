@@ -1,3 +1,5 @@
+const browser = chrome || browser;
+
 let selectingElement = false;
 let previousHighlight = null;
 
@@ -7,12 +9,16 @@ window.addEventListener("load", () => {
     }, 1000);
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "selectElement") {
+        // Start selecting elements
         selectingElement = true;
         document.body.style.cursor = "crosshair";
+        sendResponse({status: "Element selection started"});
     } else if (request.action === "clearElements") {
+        // Clear all shuffle buttons
         clearAllShuffleButtons();
+        sendResponse({status: "Elements cleared"});
     }
 });
 
